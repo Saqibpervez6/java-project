@@ -1,0 +1,145 @@
+import javafx.application.Application;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.geometry.Insets;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.*;
+import javafx.scene.text.Font;
+import javafx.stage.Stage;
+
+public class LibraryManagementSystem extends Application {
+
+    private TableView<Book> table;
+    private TextField titleInput, authorInput, isbnInput;
+    private ObservableList<Book> bookList;
+
+    public static void main(String[] args) {
+        launch(args);
+    }
+
+    @Override
+    public void start(Stage primaryStage) {
+        primaryStage.setTitle("Library Management System");
+
+        // Title label
+        Label heading = new Label("Library Management System");
+        heading.setFont(Font.font("Arial", 24));
+        heading.setStyle("-fx-font-weight: bold; -fx-padding: 10 0 20 0;");
+
+        // Input fields
+        titleInput = new TextField();
+        titleInput.setPromptText("Title");
+        titleInput.setPrefWidth(200);
+
+        authorInput = new TextField();
+        authorInput.setPromptText("Author");
+        authorInput.setPrefWidth(200);
+
+        isbnInput = new TextField();
+        isbnInput.setPromptText("ISBN");
+        isbnInput.setPrefWidth(150);
+
+        // Buttons
+        Button addButton = new Button("Add Book");
+        addButton.setStyle("-fx-background-color: #3f51b5; -fx-text-fill: white; -fx-font-weight: bold;");
+        addButton.setOnAction(e -> addBook());
+
+        Button deleteButton = new Button("Remove Selected");
+        deleteButton.setStyle("-fx-background-color: #e53935; -fx-text-fill: white; -fx-font-weight: bold;");
+        deleteButton.setOnAction(e -> removeSelectedBook());
+
+        HBox inputBox = new HBox(10);
+        inputBox.getChildren().addAll(titleInput, authorInput, isbnInput, addButton, deleteButton);
+        inputBox.setPadding(new Insets(10, 0, 20, 0));
+
+        // Table setup
+        table = new TableView<>();
+        bookList = FXCollections.observableArrayList();
+        table.setItems(bookList);
+        table.setPrefHeight(350);
+
+        TableColumn<Book, String> titleCol = new TableColumn<>("Title");
+        titleCol.setMinWidth(200);
+        titleCol.setCellValueFactory(new PropertyValueFactory<>("title"));
+
+        TableColumn<Book, String> authorCol = new TableColumn<>("Author");
+        authorCol.setMinWidth(150);
+        authorCol.setCellValueFactory(new PropertyValueFactory<>("author"));
+
+        TableColumn<Book, String> isbnCol = new TableColumn<>("ISBN");
+        isbnCol.setMinWidth(150);
+        isbnCol.setCellValueFactory(new PropertyValueFactory<>("isbn"));
+
+        table.getColumns().addAll(titleCol, authorCol, isbnCol);
+
+        VBox layout = new VBox(10);
+        layout.setPadding(new Insets(15, 20, 20, 20));
+        layout.getChildren().addAll(heading, inputBox, table);
+        layout.setStyle("-fx-background-color: #f5f5f5;");
+
+        Scene scene = new Scene(layout, 800, 450);
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+
+    private void addBook() {
+        String title = titleInput.getText().trim();
+        String author = authorInput.getText().trim();
+        String isbn = isbnInput.getText().trim();
+
+        if (title.isEmpty() || author.isEmpty() || isbn.isEmpty()) {
+            alert(Alert.AlertType.ERROR, "Input Error", null, "Please fill in all fields.");
+            return;
+        }
+
+        Book book = new Book(title, author, isbn);
+        bookList.add(book);
+
+        titleInput.clear();
+        authorInput.clear();
+        isbnInput.clear();
+    }
+
+    private void removeSelectedBook() {
+        Book selectedBook = table.getSelectionModel().getSelectedItem();
+        if (selectedBook == null) {
+            alert(Alert.AlertType.WARNING, "No Selection", null, "No book selected to remove.");
+            return;
+        }
+        bookList.remove(selectedBook);
+    }
+
+    private void alert(Alert.AlertType type, String title, String header, String content) {
+        Alert alert = new Alert(type);
+        alert.setTitle(title);
+        alert.setHeaderText(header);
+        alert.setContentText(content);
+        alert.showAndWait();
+    }
+
+    public static class Book {
+        private final String title;
+        private final String author;
+        private final String isbn;
+
+        public Book(String title, String author, String isbn) {
+            this.title = title;
+            this.author = author;
+            this.isbn = isbn;
+        }
+
+        public String getTitle() {
+            return title;
+        }
+
+        public String getAuthor() {
+            return author;
+        }
+
+        public String getIsbn() {
+            return isbn;
+        }
+    }
+}
