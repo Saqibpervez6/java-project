@@ -1,0 +1,206 @@
+package application;
+import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
+import javafx.stage.Stage;
+import java.util.*;
+
+public class TenentManagementSystem extends Application {
+    Label statusLabel = new Label("Welcome to Iqra University Tenant System!");
+    Student student = new Student();
+    Admin admin = new Admin();
+    Application app = new Application();
+    VanService vanService = new VanService();
+    Stage primaryStage;
+    public static void main(String[] args) {
+        launch(args);
+    }
+    @Override
+    public void start(Stage stage) {
+        this.primaryStage = stage;
+        showLoginScene(); // Show login first
+    }
+    void showLoginScene() {
+        Label userLabel = new Label("Username:");
+        TextField usernameField = new TextField();
+        usernameField.setPromptText("Enter username");
+        Label passLabel = new Label("Password:");
+        PasswordField passwordField = new PasswordField();
+        passwordField.setPromptText("Enter password");
+        Label loginStatus = new Label();
+        Button loginBtn = new Button("Login");
+        loginBtn.setOnAction(e -> {
+            String username = usernameField.getText();
+            String password = passwordField.getText();
+            // Dummy check - you can replace this with real auth logic
+            if (username.equals("student") && password.equals("123")) {
+                student.name = username;
+                student.password = password;
+                loginStatus.setText("Login successful!");
+                showMainScene();
+            } else if (username.equals("admin") && password.equals("admin")) {
+                admin.name = username;
+                admin.password = password;
+                loginStatus.setText("Admin login successful!");
+                showMainScene();
+            } else {
+                loginStatus.setText("Invalid credentials. Try again.");
+            }
+    });
+        VBox loginLayout = new VBox(10, userLabel, usernameField, passLabel, passwordField, loginBtn, loginStatus);
+        loginLayout.setPadding(new Insets(20));
+        loginLayout.setStyle("-fx-background-color: #F0F8FF;");
+        Scene loginScene = new Scene(loginLayout, 350, 250);
+        primaryStage.setTitle("Login - Tenant Management System");
+        primaryStage.setScene(loginScene);
+        primaryStage.show();
+    }
+    void showMainScene() {
+        // Input Fields
+        TextField nameField = new TextField();
+        nameField.setPromptText("Enter Student Name");
+        TextField regid = new TextField();
+        regid.setPromptText("Enter Reg ID");
+        TextField emailField = new TextField();
+        emailField.setPromptText("Enter Email");
+        ComboBox<String> serviceBox = new ComboBox<>();
+        serviceBox.getItems().addAll(
+                "Van Service - Route A",
+                "Van Service - Route B",
+               "Van Service - Route C",
+                "Van Service - Route D",
+                "Van Service - Route E"
+        );
+        serviceBox.setPromptText("Enter Route");
+        ComboBox<String> paymentMethodBox = new ComboBox<>();
+        paymentMethodBox.getItems().addAll("Cash", "Card", "Online Transfer");
+        paymentMethodBox.setPromptText("Select Payment Method");
+        Button applyBtn = new Button("Apply for Service");
+        Button approveBtn = new Button("Admin Approves");
+        Button payBtn = new Button("Make Payment");
+        applyBtn.setOnAction(e -> {
+            student.name = nameField.getText();
+            student.email = emailField.getText();
+            student.regid = regid.getText();
+            student.login();
+            String selectedService = serviceBox.getValue();
+            if (selectedService == null) {
+                statusLabel.setText("Please select a service route.");
+                return;
+            }
+            vanService.name = "Morning Shuttle";
+            vanService.route = selectedService.split(" - ")[1];
+            vanService.pickupLocation = "Gate 1";
+            vanService.fee = 4500;
+            app.applicationId = "APP-1001";
+            app.student = student;
+            app.service = vanService;
+            student.applyForService(vanService, app);
+            updateStatus();
+        });
+        approveBtn.setOnAction(e -> {
+            admin.approveApplication(app);
+            admin.sendNotification(student, "Your van service application has been approved.");
+            updateStatus();
+        });
+        payBtn.setOnAction(e -> {
+            String selectedMethod = paymentMethodBox.getValue();
+            if (selectedMethod == null) {
+                statusLabel.setText("Please select a payment method.");
+                return;
+            }
+            Payment payment = new Payment();
+            payment.paymentId = "PAY-001";
+            payment.amount = vanService.fee;
+            payment.method = selectedMethod;
+            student.makePayment(payment);
+            app.paymentStatus = payment.status;
+            updateStatus();
+            student.logout();
+        });
+
+        statusLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #3333FF;");
+        HBox topLabelBox = new HBox(statusLabel);
+        topLabelBox.setStyle("-fx-alignment: center;");
+
+        VBox formBox = new VBox(10, nameField, regid, emailField, serviceBox, paymentMethodBox, applyBtn, approveBtn, payBtn);
+        formBox.setPadding(new Insets(20));
+
+        VBox container = new VBox(10, topLabelBox, formBox);
+        container.setPadding(new Insets(20));
+        container.setStyle("-fx-background-color: #E0E0E0;");
+
+        Scene mainScene = new Scene(container, 420, 480);
+        primaryStage.setTitle("Tenant Management System - JavaFX");
+        primaryStage.setScene(mainScene);
+        primaryStage.show();
+    }
+
+    void updateStatus() {
+        statusLabel.setText("Status: " + app.status + ", Payment: " + app.paymentStatus);
+    }
+}
+
+abstract class User {
+    String id, name, email, password;
+    void login() {
+        System.out.println(name + " logged in.");
+    }
+    void logout() {
+        System.out.println(name + " logged out.");
+    }
+}
+
+class Student extends User {
+    public String regid;
+    List<Service> registeredServices = new ArrayList<>();
+
+    void applyForService(Service s, Application a) {
+        System.out.println(name + " applied for service: " + s.name);
+        a.status = "Pending";
+    }
+    void makePayment(Payment p) {
+        p.processPayment();
+    }
+}
+
+class Admin extends User {
+    void approveApplication(Application a) {
+        a.status = "Approved";
+        System.out.println("Application for " + a.service.name + " approved by Admin.");
+    }
+    void sendNotification(Student s, String message) {
+        System.out.println("Notification to " + s.name + ": " + message);
+    }
+}
+
+abstract class Service {
+    String serviceId, name;
+    double fee;
+    int duration = 4;
+}
+class VanService extends Service {
+    String route, pickupLocation;
+}
+class Application {
+    String applicationId;
+    Student student;
+    Service service;
+    String status = "Not Applied";
+    String paymentStatus = "Unpaid";
+}
+class Payment {
+    String paymentId;
+    double amount;
+    Date paymentDate;
+    String method;
+    String status;
+    void processPayment() {
+        this.paymentDate = new Date();
+        this.status = "Paid";
+        System.out.println("Payment of Rs." + amount + " by " + method + " processed on " + paymentDate);
+    }
+}
+
